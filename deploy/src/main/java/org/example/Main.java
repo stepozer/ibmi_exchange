@@ -9,6 +9,7 @@ import java.beans.*;
 
 public class Main {
     public static final String[] SRC_FILES = {
+        "hw.rpgle",
         "demoarr.rpgle",
         "demosum.rpgle"
     };
