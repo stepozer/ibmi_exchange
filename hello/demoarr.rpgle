@@ -1,18 +1,16 @@
 **free
   ctl-opt main(main) dftactgrp(*no);
 
-  **
-   Печатает массив на экран
-   @param array       массив который нужно напечатать
-   @param arrayLength длинна массива
-  **
+  //
+  // Печатает массив на экран
+  //
   dcl-proc printArrayElements;
     dcl-pi *n;
-      array int(10) dim(1000) options(*varsize); // @param array массив который нужно напечатать
+      array int(10) dim(1000) options(*varsize);
       arrayLength int(10) const;
     end-pi;
 
-    dcl-s str varchar(52);
+    dcl-s str varchar(52)
     dcl-s index int(10);
 
     str = 'Array elements: [';
