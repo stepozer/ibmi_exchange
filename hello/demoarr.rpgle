@@ -10,7 +10,7 @@
       arrayLength int(10) const;
     end-pi;
 
-    dcl-s str varchar(52)
+    dcl-s str varchar(52);
     dcl-s index int(10);
 
     str = 'Array elements: [';
