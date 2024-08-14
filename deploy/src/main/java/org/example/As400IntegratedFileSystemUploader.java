@@ -6,6 +6,9 @@ import org.apache.commons.net.ftp.FTPClient;
 import java.io.FileInputStream;
 import java.io.IOException;
 
+/**
+ * Загружает указанный файл на сервер IBMi в интегрированную файловую систему для оследующей компиляции
+ */
 public class As400IntegratedFileSystemUploader {
     private FTPClient client;
 

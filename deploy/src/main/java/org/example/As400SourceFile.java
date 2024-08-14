@@ -1,5 +1,8 @@
 package org.example;
 
+/**
+ * Описывает класс который будет загружен и скомпилирован на сервере IBMi (Например RPG, PF, DSPF)
+ */
 public class As400SourceFile {
     private String localPath;
     private String remotePath;

@@ -9,6 +9,9 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
+/**
+ * Ищет в списке spooled файлов последний для указанного файла
+ */
 public class As400SpooledFileFinder {
     public String fetchFileContent(AS400 as400Conn, CommandCall as400Cmd, String fileName) {
         try {

@@ -3,6 +3,9 @@ package org.example;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Вытаскивает из контента spooled файла перечень ошибок в виде списка строк
+ */
 public class As400SpooledFileParser {
     public List<String> extractRPECompilationErrors(String text) {
         List<String> errorMessages = new ArrayList<>();
