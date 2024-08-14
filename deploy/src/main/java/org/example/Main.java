@@ -1,82 +1,113 @@
 package org.example;
 
 import com.ibm.as400.access.*;
-import org.apache.commons.net.ftp.FTPClient;
-
 import java.io.*;
 import java.lang.*;
 import java.beans.*;
+import java.util.*;
 
 public class Main {
-    public static final String[] SRC_FILES = {
-        "hw.rpgle",
-        "demoarr.rpgle",
-        "demosum.rpgle"
-    };
-
     public static void main(String[] args) throws IOException {
+        var PROJECT_LOCAL_ROOT = System.getenv("PROJECT_LOCAL_ROOT");
+        var PROJECT_REMOTE_ROOT = "/home/STEPOZER";
         var SERVER_HOST = System.getenv("SERVER_HOST");
         var SERVER_USER = System.getenv("SERVER_USER");
         var SERVER_PASS = System.getenv("SERVER_PASS");
-        var FTPClient = createFTPClient(SERVER_HOST, SERVER_USER, SERVER_PASS);
+
+        List<As400SourceFile> files = new ArrayList<As400SourceFile>();
+
+        // Демо приложения
+        files.add(new As400SourceFile(PROJECT_LOCAL_ROOT + "/hello/hw.rpgle", PROJECT_REMOTE_ROOT + "/hw.rpgle"));
+        files.add(new As400SourceFile(PROJECT_LOCAL_ROOT + "/hello/demoarr.rpgle", PROJECT_REMOTE_ROOT + "/demoarr.rpgle"));
+        files.add(new As400SourceFile(PROJECT_LOCAL_ROOT + "/hello/demosum.rpgle", PROJECT_REMOTE_ROOT + "/demosum.rpgle"));
+
+        var as400IFSUploader = new As400IntegratedFileSystemUploader(SERVER_HOST, SERVER_USER, SERVER_PASS);
         var as400Conn = new AS400(SERVER_HOST, SERVER_USER, SERVER_PASS.toCharArray());
         var as400Cmd = new CommandCall(as400Conn);
 
-        log("Start file uploading");
+        ConsoleLogger.info("Start file uploading");
 
-        for (var srcFile : Main.SRC_FILES) {
-            uploadFile(FTPClient, System.getenv("PROJECT_LOCAL_ROOT") + "/hello/" + srcFile, "/home/STEPOZER/" + srcFile);
+        for (var srcFile : files) {
+            as400IFSUploader.uploadFile(srcFile.getLocalPath(), srcFile.getRemotePath());
         }
 
-        log("All files uploaded");
-        FTPClient.logout();
+        ConsoleLogger.info("All files uploaded");
+        as400IFSUploader.logout();
 
         System.out.println("Start compilation");
 
-        for (var srcFile : Main.SRC_FILES) {
+        /*for (var srcFile : files) {
             var fileName = srcFile.split("\\.")[0];
-            executeCommand(
+            var fileExtension = srcFile.split("\\.")[1];
+
+            if (Objects.equals(fileExtension, "rpgle")) {
+                // Компиляция RPG программы
+                executeCommand(
+                    as400Conn,
+                    as400Cmd,
+                    "CRTBNDRPG PGM(STEPOZER1/" + fileName +") SRCSTMF('/home/STEPOZER/" + srcFile + "') OPTION(*EVENTF) DBGVIEW(*SOURCE) TGTRLS(*CURRENT) TGTCCSID(*JOB)",
+                    fileName.toUpperCase()
+                );
+            }
+
+            if (Objects.equals(fileExtension, "PF")) {
+                // Компиляция PF файлов
+                executeCommand(
+                    as400Conn,
+                    as400Cmd,
+                    "CRTPF FILE(STEPOZER1/" + fileName + ")",
+                    fileName.toUpperCase()
+                );
+            }
+
+            if (Objects.equals(fileExtension, "DSPF")) {
+                // Компиляция дисплейных DSPF файлов
+                executeCommand(
+                        as400Conn,
+                    as400Cmd,
+                    "ADDPFM FILE(STEPOZER1/HELLO) MBR(" + fileName + ") SRCTYPE(DSPF)",
+                        ""
+                );
+                executeCommand(
+                        as400Conn,
+                    as400Cmd,
+                    "CRTDSPF FILE(STEPOZER1/" + fileName + ") SRCFILE(STEPOZER1/HELLO) SRCMBR(" + fileName + ") OPTION(*EVENTF) RSTDSP(*NO) REPLACE(*YES)",
+                        ""
+                );
+            }
+        }*/
+
+        ConsoleLogger.info("End");
+    }
+
+  /*  public static void compileRPGProgram(AS400 as400Conn, CommandCall as400Cmd, String command, String spooledFileName) {
+        // Компиляция RPG программы
+        executeCommand(
+                as400Conn,
                 as400Cmd,
-                "CRTBNDRPG PGM(STEPOZER1/" + fileName +") SRCSTMF('/home/STEPOZER/" + srcFile + "') OPTION(*EVENTF) DBGVIEW(*SOURCE) TGTRLS(*CURRENT) TGTCCSID(*JOB)"
-            );
-        }
+                "CRTBNDRPG PGM(STEPOZER1/" + fileName +") SRCSTMF('/home/STEPOZER/" + srcFile + "') OPTION(*EVENTF) DBGVIEW(*SOURCE) TGTRLS(*CURRENT) TGTCCSID(*JOB)",
+                fileName.toUpperCase()
+        );
+    }*/
 
-        log("End");
-    }
-
-    public static FTPClient createFTPClient(String serverHost, String serverUser, String serverPass) {
-        try {
-            FTPClient client = new FTPClient();
-            client.connect(serverHost);
-            client.login(serverUser, serverPass);
-            client.enterLocalPassiveMode(); //passive mode - IMPORTANT
-            client.setFileType(FTP.ASCII);
-            return client;
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public static void uploadFile(FTPClient client, String localFilePath, String serverFilePath) {
-        log("  Upload file " + localFilePath + " > " + serverFilePath);
+    public static void executeCommand(AS400 as400Conn, CommandCall as400Cmd, String command, String spooledFileName) {
+        ConsoleLogger.info("● Execute command " + command);
 
         try {
-            var fis = new FileInputStream(localFilePath);
-            client.storeFile(serverFilePath, fis);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
+            var isSuccess = as400Cmd.run(command);
 
-    public static void executeCommand(CommandCall as400Cmd, String command) {
-        log("  Execute command " + command);
-
-        try {
-            as400Cmd.run(command);
             AS400Message[] messageList;
             messageList = as400Cmd.getMessageList();
             for (AS400Message message : messageList) {
-                log("  " + message.getText());
+                ConsoleLogger.info("  " + message.getText());
+            }
+
+            if (!isSuccess) {
+                var content = (new As400SpooledFileFinder()).fetchFileContent(as400Conn, as400Cmd, spooledFileName);
+                var errorMessages = (new As400SpooledFileParser()).extractRPECompilationErrors(content);
+                errorMessages.forEach( (n) -> {
+                    ConsoleLogger.info("    " + n);
+                } );
             }
         } catch (
             AS400SecurityException |
@@ -88,10 +119,6 @@ public class Main {
             throw new RuntimeException(e);
         }
 
-        log("");
-    }
-
-    public static void log(String message) {
-        System.out.println(message);
+        ConsoleLogger.info("");
     }
 }
