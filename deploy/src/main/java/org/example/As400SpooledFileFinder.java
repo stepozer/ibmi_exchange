@@ -17,10 +17,7 @@ public class As400SpooledFileFinder {
         try {
             SpooledFileOpenList list = new SpooledFileOpenList(as400Conn);
 
-            // Get all of myUserID's spooled files.
             list.setFilterUsers(new String[] { "*CURRENT" } );
-
-            // Sort the list by job number in DESC order.
             list.addSortField(SpooledFileOpenList.JOB_NUMBER, false);
             list.open();
             var items = list.getItems();
@@ -33,12 +30,12 @@ public class As400SpooledFileFinder {
                 }
 
                 SpooledFile spooledFile = new SpooledFile(
-                        as400Conn, // AS400
-                        item.getName(), // splf name
-                        item.getNumber(), // splf number
-                        item.getJobName(), // job name
-                        item.getJobUser(), // job user
-                        item.getJobNumber() ); // job number
+                    as400Conn, // AS400
+                    item.getName(), // splf name
+                    item.getNumber(), // splf number
+                    item.getJobName(), // job name
+                    item.getJobUser(), // job user
+                    item.getJobNumber() ); // job number
 
                 PrintParameterList printParms = new PrintParameterList();
                 printParms.setParameter(PrintObject.ATTR_WORKSTATION_CUST_OBJECT,  "/QSYS.LIB/QWPDEFAULT.WSCST");
