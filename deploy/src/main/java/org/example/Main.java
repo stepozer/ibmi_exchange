@@ -17,9 +17,9 @@ public class Main {
         List<As400SourceFile> files = new ArrayList<As400SourceFile>();
 
         // Демо приложения
-        files.add(new As400SourceFile(PROJECT_LOCAL_ROOT + "/hello/hw.rpgle", PROJECT_REMOTE_ROOT + "/hw.rpgle"));
-        files.add(new As400SourceFile(PROJECT_LOCAL_ROOT + "/hello/demoarr.rpgle", PROJECT_REMOTE_ROOT + "/demoarr.rpgle"));
-        files.add(new As400SourceFile(PROJECT_LOCAL_ROOT + "/hello/demosum.rpgle", PROJECT_REMOTE_ROOT + "/demosum.rpgle"));
+        files.add(new As400SourceFile(PROJECT_LOCAL_ROOT + "/hello/hw.rpgle", PROJECT_REMOTE_ROOT + "/hw.rpgle", "STEPOZER1"));
+        files.add(new As400SourceFile(PROJECT_LOCAL_ROOT + "/hello/demoarr.rpgle", PROJECT_REMOTE_ROOT + "/demoarr.rpgle", "STEPOZER1"));
+        files.add(new As400SourceFile(PROJECT_LOCAL_ROOT + "/hello/demosum.rpgle", PROJECT_REMOTE_ROOT + "/demosum.rpgle", "STEPOZER1"));
 
         var as400IFSUploader = new As400IntegratedFileSystemUploader(SERVER_HOST, SERVER_USER, SERVER_PASS);
         var as400Conn = new AS400(SERVER_HOST, SERVER_USER, SERVER_PASS.toCharArray());
@@ -36,18 +36,12 @@ public class Main {
 
         System.out.println("Start compilation");
 
-        /*for (var srcFile : files) {
-            var fileName = srcFile.split("\\.")[0];
-            var fileExtension = srcFile.split("\\.")[1];
+        for (var srcFile : files) {
+            var fileName = srcFile.getFileName();
+            var fileExtension = srcFile.getFileExtension();
 
             if (Objects.equals(fileExtension, "rpgle")) {
-                // Компиляция RPG программы
-                executeCommand(
-                    as400Conn,
-                    as400Cmd,
-                    "CRTBNDRPG PGM(STEPOZER1/" + fileName +") SRCSTMF('/home/STEPOZER/" + srcFile + "') OPTION(*EVENTF) DBGVIEW(*SOURCE) TGTRLS(*CURRENT) TGTCCSID(*JOB)",
-                    fileName.toUpperCase()
-                );
+                compileRPGProgram(as400Conn, as400Cmd, srcFile);
             }
 
             if (Objects.equals(fileExtension, "PF")) {
@@ -75,20 +69,19 @@ public class Main {
                         ""
                 );
             }
-        }*/
+        }
 
         ConsoleLogger.info("End");
     }
 
-  /*  public static void compileRPGProgram(AS400 as400Conn, CommandCall as400Cmd, String command, String spooledFileName) {
-        // Компиляция RPG программы
+    public static void compileRPGProgram(AS400 as400Conn, CommandCall as400Cmd, As400SourceFile file) {
         executeCommand(
-                as400Conn,
-                as400Cmd,
-                "CRTBNDRPG PGM(STEPOZER1/" + fileName +") SRCSTMF('/home/STEPOZER/" + srcFile + "') OPTION(*EVENTF) DBGVIEW(*SOURCE) TGTRLS(*CURRENT) TGTCCSID(*JOB)",
-                fileName.toUpperCase()
+            as400Conn,
+            as400Cmd,
+            "CRTBNDRPG PGM(" + file.getRemoteLibrary() + "/" + file.getFileName() +") SRCSTMF('" + file.getRemotePath() + "') OPTION(*EVENTF) DBGVIEW(*SOURCE) TGTRLS(*CURRENT) TGTCCSID(*JOB)",
+            file.getFileName().toUpperCase()
         );
-    }*/
+    }
 
     public static void executeCommand(AS400 as400Conn, CommandCall as400Cmd, String command, String spooledFileName) {
         ConsoleLogger.info("● Execute command " + command);
