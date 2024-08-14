@@ -42,32 +42,10 @@ public class Main {
 
             if (Objects.equals(fileExtension, "rpgle")) {
                 compileRPGProgram(as400Conn, as400Cmd, srcFile);
-            }
-
-            if (Objects.equals(fileExtension, "PF")) {
-                // Компиляция PF файлов
-                executeCommand(
-                    as400Conn,
-                    as400Cmd,
-                    "CRTPF FILE(STEPOZER1/" + fileName + ")",
-                    fileName.toUpperCase()
-                );
-            }
-
-            if (Objects.equals(fileExtension, "DSPF")) {
-                // Компиляция дисплейных DSPF файлов
-                executeCommand(
-                        as400Conn,
-                    as400Cmd,
-                    "ADDPFM FILE(STEPOZER1/HELLO) MBR(" + fileName + ") SRCTYPE(DSPF)",
-                        ""
-                );
-                executeCommand(
-                        as400Conn,
-                    as400Cmd,
-                    "CRTDSPF FILE(STEPOZER1/" + fileName + ") SRCFILE(STEPOZER1/HELLO) SRCMBR(" + fileName + ") OPTION(*EVENTF) RSTDSP(*NO) REPLACE(*YES)",
-                        ""
-                );
+            } else if (Objects.equals(fileExtension, "PF")) {
+                compilePFFile(as400Conn, as400Cmd, srcFile);
+            } else if (Objects.equals(fileExtension, "DSPF")) {
+                compileDSPFFile(as400Conn, as400Cmd, srcFile);
             }
         }
 
@@ -80,6 +58,30 @@ public class Main {
             as400Cmd,
             "CRTBNDRPG PGM(" + file.getRemoteLibrary() + "/" + file.getFileName() +") SRCSTMF('" + file.getRemotePath() + "') OPTION(*EVENTF) DBGVIEW(*SOURCE) TGTRLS(*CURRENT) TGTCCSID(*JOB)",
             file.getFileName().toUpperCase()
+        );
+    }
+
+    public static void compilePFFile(AS400 as400Conn, CommandCall as400Cmd, As400SourceFile file) {
+        executeCommand(
+            as400Conn,
+            as400Cmd,
+            "CRTPF FILE(STEPOZER1/" + file.getFileName() + ")",
+            file.getFileName().toUpperCase()
+        );
+    }
+
+    public static void compileDSPFFile(AS400 as400Conn, CommandCall as400Cmd, As400SourceFile file) {
+        executeCommand(
+            as400Conn,
+            as400Cmd,
+            "ADDPFM FILE(STEPOZER1/HELLO) MBR(" + file.getFileName() + ") SRCTYPE(DSPF)",
+            ""
+        );
+        executeCommand(
+            as400Conn,
+            as400Cmd,
+            "CRTDSPF FILE(STEPOZER1/" + file.getFileName() + ") SRCFILE(STEPOZER1/HELLO) SRCMBR(" + file.getFileName() + ") OPTION(*EVENTF) RSTDSP(*NO) REPLACE(*YES)",
+            ""
         );
     }
 
