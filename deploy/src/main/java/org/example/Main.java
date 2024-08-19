@@ -17,9 +17,12 @@ public class Main {
         List<As400SourceFile> files = new ArrayList<As400SourceFile>();
 
         // Демо приложения
-        files.add(new As400SourceFile(PROJECT_LOCAL_ROOT + "/hello/hw.rpgle", PROJECT_REMOTE_ROOT + "/hw.rpgle", "STEPOZER1"));
-        files.add(new As400SourceFile(PROJECT_LOCAL_ROOT + "/hello/demoarr.rpgle", PROJECT_REMOTE_ROOT + "/demoarr.rpgle", "STEPOZER1"));
-        files.add(new As400SourceFile(PROJECT_LOCAL_ROOT + "/hello/demosum.rpgle", PROJECT_REMOTE_ROOT + "/demosum.rpgle", "STEPOZER1"));
+        //files.add(new As400SourceFile(PROJECT_LOCAL_ROOT + "/hello/hw.rpgle", PROJECT_REMOTE_ROOT + "/hw.rpgle", "STEPOZER1"));
+        //files.add(new As400SourceFile(PROJECT_LOCAL_ROOT + "/hello/demoarr.rpgle", PROJECT_REMOTE_ROOT + "/demoarr.rpgle", "STEPOZER1"));
+        //files.add(new As400SourceFile(PROJECT_LOCAL_ROOT + "/hello/demosum.rpgle", PROJECT_REMOTE_ROOT + "/demosum.rpgle", "STEPOZER1"));
+
+        // Курсы валют
+        files.add(new As400SourceFile(PROJECT_LOCAL_ROOT + "/exchange/XCURRENCY.PF", PROJECT_REMOTE_ROOT + "/XCURRENCY.PF", "STEPOZER1"));
 
         var as400IFSUploader = new As400IntegratedFileSystemUploader(SERVER_HOST, SERVER_USER, SERVER_PASS);
         var as400Conn = new AS400(SERVER_HOST, SERVER_USER, SERVER_PASS.toCharArray());
@@ -65,7 +68,21 @@ public class Main {
         executeCommand(
             as400Conn,
             as400Cmd,
-            "CRTPF FILE(STEPOZER1/" + file.getFileName() + ")",
+            "QSYS/CPYFRMSTMF FROMSTMF('/home/STEPOZER/XCURRENCY.PF') TOMBR('/QSYS.LIB/STEPOZER1.LIB/HELLO.FILE/XCURRENCY.MBR') MBROPT(*REPLACE) STMFCCSID(1208) DBFCCSID(*FILE)",
+            file.getFileName().toUpperCase()
+        );
+
+        executeCommand(
+            as400Conn,
+            as400Cmd,
+            "CHGPFM FILE(STEPOZER1/HELLO) MBR(XCURRENCY) SRCTYPE(PF)",
+            file.getFileName().toUpperCase()
+        );
+
+        executeCommand(
+            as400Conn,
+            as400Cmd,
+            "CRTPF FILE(STEPOZER1/RCURRENCY) SRCFILE(STEPOZER1/HELLO) SRCMBR(" + file.getFileName() + ")",
             file.getFileName().toUpperCase()
         );
     }
@@ -75,13 +92,13 @@ public class Main {
             as400Conn,
             as400Cmd,
             "ADDPFM FILE(STEPOZER1/HELLO) MBR(" + file.getFileName() + ") SRCTYPE(DSPF)",
-            ""
+            file.getFileName().toUpperCase()
         );
         executeCommand(
             as400Conn,
             as400Cmd,
             "CRTDSPF FILE(STEPOZER1/" + file.getFileName() + ") SRCFILE(STEPOZER1/HELLO) SRCMBR(" + file.getFileName() + ") OPTION(*EVENTF) RSTDSP(*NO) REPLACE(*YES)",
-            ""
+            file.getFileName().toUpperCase()
         );
     }
 
