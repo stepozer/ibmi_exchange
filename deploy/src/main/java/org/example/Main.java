@@ -17,12 +17,19 @@ public class Main {
         List<As400SourceFile> files = new ArrayList<As400SourceFile>();
 
         // Демо приложения
-        //files.add(new As400SourceFile(PROJECT_LOCAL_ROOT + "/hello/hw.rpgle", PROJECT_REMOTE_ROOT + "/hw.rpgle", "STEPOZER1"));
-        //files.add(new As400SourceFile(PROJECT_LOCAL_ROOT + "/hello/demoarr.rpgle", PROJECT_REMOTE_ROOT + "/demoarr.rpgle", "STEPOZER1"));
-        //files.add(new As400SourceFile(PROJECT_LOCAL_ROOT + "/hello/demosum.rpgle", PROJECT_REMOTE_ROOT + "/demosum.rpgle", "STEPOZER1"));
+        //files.add(new As400RPGSourceFile(PROJECT_LOCAL_ROOT + "/hello/hw.rpgle", PROJECT_REMOTE_ROOT + "/hw.rpgle", "STEPOZER1"));
+        //files.add(new As400RPGSourceFile(PROJECT_LOCAL_ROOT + "/hello/demoarr.rpgle", PROJECT_REMOTE_ROOT + "/demoarr.rpgle", "STEPOZER1"));
+        //files.add(new As400RPGSourceFile(PROJECT_LOCAL_ROOT + "/hello/demosum.rpgle", PROJECT_REMOTE_ROOT + "/demosum.rpgle", "STEPOZER1"));
 
         // Курсы валют
-        files.add(new As400SourceFile(PROJECT_LOCAL_ROOT + "/exchange/XCURRENCY.PF", PROJECT_REMOTE_ROOT + "/XCURRENCY.PF", "STEPOZER1"));
+        files.add(new As400PFSourceFile(
+            PROJECT_LOCAL_ROOT + "/exchange/XCURRENCY.PF",      // localPath
+            PROJECT_REMOTE_ROOT + "/XCURRENCY.PF",              // remotePath
+            "STEPOZER1",                                        // remoteLibrary
+            "HELLO",                                            // remoteLibraryFile
+            "/QSYS.LIB/STEPOZER1.LIB/HELLO.FILE/XCURRENCY.MBR", // remoteMBRPath
+            "RCURRENCY"                                         // recordName
+        ));
 
         var as400IFSUploader = new As400IntegratedFileSystemUploader(SERVER_HOST, SERVER_USER, SERVER_PASS);
         var as400Conn = new AS400(SERVER_HOST, SERVER_USER, SERVER_PASS.toCharArray());
@@ -40,22 +47,19 @@ public class Main {
         System.out.println("Start compilation");
 
         for (var srcFile : files) {
-            var fileName = srcFile.getFileName();
-            var fileExtension = srcFile.getFileExtension();
-
-            if (Objects.equals(fileExtension, "rpgle")) {
-                compileRPGProgram(as400Conn, as400Cmd, srcFile);
-            } else if (Objects.equals(fileExtension, "PF")) {
-                compilePFFile(as400Conn, as400Cmd, srcFile);
-            } else if (Objects.equals(fileExtension, "DSPF")) {
+            if (srcFile instanceof As400RPGSourceFile) {
+                compileRPGProgram(as400Conn, as400Cmd, (As400RPGSourceFile) srcFile);
+            } else if (srcFile instanceof As400PFSourceFile) {
+                compilePFFile(as400Conn, as400Cmd, (As400PFSourceFile) srcFile);
+            } /*else if (Objects.equals(fileExtension, "DSPF")) {
                 compileDSPFFile(as400Conn, as400Cmd, srcFile);
-            }
+            }*/
         }
 
         ConsoleLogger.info("End");
     }
 
-    public static void compileRPGProgram(AS400 as400Conn, CommandCall as400Cmd, As400SourceFile file) {
+    public static void compileRPGProgram(AS400 as400Conn, CommandCall as400Cmd, As400RPGSourceFile file) {
         executeCommand(
             as400Conn,
             as400Cmd,
@@ -64,30 +68,30 @@ public class Main {
         );
     }
 
-    public static void compilePFFile(AS400 as400Conn, CommandCall as400Cmd, As400SourceFile file) {
+    public static void compilePFFile(AS400 as400Conn, CommandCall as400Cmd, As400PFSourceFile file) {
         executeCommand(
             as400Conn,
             as400Cmd,
-            "QSYS/CPYFRMSTMF FROMSTMF('/home/STEPOZER/XCURRENCY.PF') TOMBR('/QSYS.LIB/STEPOZER1.LIB/HELLO.FILE/XCURRENCY.MBR') MBROPT(*REPLACE) STMFCCSID(1208) DBFCCSID(*FILE)",
+            "QSYS/CPYFRMSTMF FROMSTMF('" + file.getRemotePath() + "') TOMBR('" + file.getRemoteMBRPath() + "') MBROPT(*REPLACE) STMFCCSID(1208) DBFCCSID(*FILE)",
             file.getFileName().toUpperCase()
         );
 
         executeCommand(
             as400Conn,
             as400Cmd,
-            "CHGPFM FILE(STEPOZER1/HELLO) MBR(XCURRENCY) SRCTYPE(PF)",
+            "CHGPFM FILE(" + file.getRemoteLibrary() + "/" + file.getRemoteLibraryFile() + ") MBR(" + file.getFileName() + ") SRCTYPE(PF)",
             file.getFileName().toUpperCase()
         );
 
         executeCommand(
             as400Conn,
             as400Cmd,
-            "CRTPF FILE(STEPOZER1/RCURRENCY) SRCFILE(STEPOZER1/HELLO) SRCMBR(" + file.getFileName() + ")",
+            "CRTPF FILE(" + file.getRemoteLibrary() + "/" + file.getRecordName() + ") SRCFILE(" + file.getRemoteLibrary() + "/" + file.getRemoteLibraryFile() + ") SRCMBR(" + file.getFileName() + ")",
             file.getFileName().toUpperCase()
         );
     }
 
-    public static void compileDSPFFile(AS400 as400Conn, CommandCall as400Cmd, As400SourceFile file) {
+   /* public static void compileDSPFFile(AS400 as400Conn, CommandCall as400Cmd, As400SourceFile file) {
         executeCommand(
             as400Conn,
             as400Cmd,
@@ -100,7 +104,7 @@ public class Main {
             "CRTDSPF FILE(STEPOZER1/" + file.getFileName() + ") SRCFILE(STEPOZER1/HELLO) SRCMBR(" + file.getFileName() + ") OPTION(*EVENTF) RSTDSP(*NO) REPLACE(*YES)",
             file.getFileName().toUpperCase()
         );
-    }
+    }*/
 
     public static void executeCommand(AS400 as400Conn, CommandCall as400Cmd, String command, String spooledFileName) {
         ConsoleLogger.info("● Execute command " + command);
