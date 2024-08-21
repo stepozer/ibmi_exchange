@@ -1,40 +1,13 @@
 package org.example;
 
-/**
- * Описывает класс который будет загружен и скомпилирован на сервере IBMi (Например RPG, PF, DSPF)
- */
-public class As400SourceFile {
-    private String localPath;
-    private String remotePath;
-    private String remoteLibrary;
+interface As400SourceFile {
+    public String getLocalPath();
 
-    As400SourceFile(String localPath, String remotePath, String remoteLibrary) {
-        this.localPath = localPath;
-        this.remotePath = remotePath;
-        this.remoteLibrary = remoteLibrary;
-    }
+    public String getRemotePath();
 
-    public String getLocalPath() {
-        return localPath;
-    }
+    public String getRemoteLibrary();
 
-    public String getRemotePath() {
-        return remotePath;
-    }
+    public String getFileName();
 
-    public String getRemoteLibrary() {
-        return remoteLibrary;
-    }
-
-    public String getFileName() {
-        return getFileNameWithExtension().split("\\.")[0];
-    }
-
-    public String getFileExtension() {
-        return getFileNameWithExtension().split("\\.")[1];
-    }
-
-    private String getFileNameWithExtension() {
-        return localPath.split("/")[localPath.split("/").length - 1];
-    }
+    public String getFileExtension();
 }
