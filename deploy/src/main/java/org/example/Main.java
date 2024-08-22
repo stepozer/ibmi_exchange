@@ -30,6 +30,14 @@ public class Main {
             "/QSYS.LIB/STEPOZER1.LIB/HELLO.FILE/XCURRENCY.MBR", // remoteMBRPath
             "RCURRENCY"                                         // recordName
         ));
+        files.add(new As400LFSourceFile(
+            PROJECT_LOCAL_ROOT + "/exchange/XCURRUQ.LF",        // localPath
+            PROJECT_REMOTE_ROOT + "/XCURRUQ.LF",                // remotePath
+            "STEPOZER1",                                        // remoteLibrary
+            "HELLO",                                            // remoteLibraryFile
+            "/QSYS.LIB/STEPOZER1.LIB/HELLO.FILE/XCURRUQ.MBR",   // remoteMBRPath
+            "RCURRUQ"                                           // recordName
+        ));
 
         var as400IFSUploader = new As400IntegratedFileSystemUploader(SERVER_HOST, SERVER_USER, SERVER_PASS);
         var as400Conn = new AS400(SERVER_HOST, SERVER_USER, SERVER_PASS.toCharArray());
@@ -49,11 +57,11 @@ public class Main {
         for (var srcFile : files) {
             if (srcFile instanceof As400RPGSourceFile) {
                 compileRPGProgram(as400Conn, as400Cmd, (As400RPGSourceFile) srcFile);
+            } else if (srcFile instanceof As400LFSourceFile) {
+                compileLFFile(as400Conn, as400Cmd, (As400LFSourceFile) srcFile);
             } else if (srcFile instanceof As400PFSourceFile) {
                 compilePFFile(as400Conn, as400Cmd, (As400PFSourceFile) srcFile);
-            } /*else if (Objects.equals(fileExtension, "DSPF")) {
-                compileDSPFFile(as400Conn, as400Cmd, srcFile);
-            }*/
+            }
         }
 
         ConsoleLogger.info("End");
@@ -86,7 +94,30 @@ public class Main {
         executeCommand(
             as400Conn,
             as400Cmd,
-            "CRTPF FILE(" + file.getRemoteLibrary() + "/" + file.getRecordName() + ") SRCFILE(" + file.getRemoteLibrary() + "/" + file.getRemoteLibraryFile() + ") SRCMBR(" + file.getFileName() + ")",
+            "CRTPF FILE(" + file.getRemoteLibrary() + "/" + file.getFileName() + ") SRCFILE(" + file.getRemoteLibrary() + "/" + file.getRemoteLibraryFile() + ") SRCMBR(" + file.getFileName() + ")",
+            file.getFileName().toUpperCase()
+        );
+    }
+
+    public static void compileLFFile(AS400 as400Conn, CommandCall as400Cmd, As400PFSourceFile file) {
+        executeCommand(
+            as400Conn,
+            as400Cmd,
+            "QSYS/CPYFRMSTMF FROMSTMF('" + file.getRemotePath() + "') TOMBR('" + file.getRemoteMBRPath() + "') MBROPT(*REPLACE) STMFCCSID(1208) DBFCCSID(*FILE)",
+            file.getFileName().toUpperCase()
+        );
+
+        executeCommand(
+            as400Conn,
+            as400Cmd,
+            "CHGPFM FILE(" + file.getRemoteLibrary() + "/" + file.getRemoteLibraryFile() + ") MBR(" + file.getFileName() + ") SRCTYPE(LF)",
+            file.getFileName().toUpperCase()
+        );
+
+        executeCommand(
+            as400Conn,
+            as400Cmd,
+            "CRTLF FILE(" + file.getRemoteLibrary() + "/" + file.getFileName() + ") SRCFILE(" + file.getRemoteLibrary() + "/" + file.getRemoteLibraryFile() + ") SRCMBR(" + file.getFileName() + ")",
             file.getFileName().toUpperCase()
         );
     }
@@ -120,7 +151,8 @@ public class Main {
 
             if (!isSuccess) {
                 var content = (new As400SpooledFileFinder()).fetchFileContent(as400Conn, as400Cmd, spooledFileName);
-                var errorMessages = (new As400SpooledFileParser()).extractRPECompilationErrors(content);
+                var errorMessages = (new As400SpooledFileParser()).extractCompilationErrors(content);
+
                 errorMessages.forEach( (n) -> {
                     ConsoleLogger.info("    " + n);
                 } );
